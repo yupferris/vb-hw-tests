@@ -1,18 +1,15 @@
- - Set FRAMCYC to 2
+ - Set FRAMCYC to 1
  - Loop each game frame
-   - Observe start of frame (display frame)
-   - Write 0xff to int pending reg
+   - Observe start of game grame & start of display frame (TODO: Include in capture?)
+   - Write 0xff to int clear reg
    - Start recording
-     - Set recording state
-     - Grab int pending reg
      - Reset tick counter
    - Loop, grabbing int pending reg each iteration
      - If reg changed, append change to list
        - Timestamp with tick counter
      - Inc tick counter
-   - Observe start of frame (display frame)
-   - Write 0xff to int pending reg
+	 - Repeat until we observe start of display frame again
    - End recording
-     - Grab tick counter for total ticks per frame
+
    - Plot state changes for different bits
      - Quantize state changes to number of screen columns (chars)
