@@ -31,6 +31,11 @@ const BYTE CHAR_DATA[] =
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
+const int BIT_INDICES[] =
+{
+	0, 1, 2, 3, 4, 13, 14, 15
+};
+
 typedef struct
 {
 	WORD timestamp;
@@ -119,6 +124,7 @@ int main()
 		WORD captureTotalTicks;
 		HWORD regValue, prevRegValue;
 		Entry *entryPtr;
+		int numEntries;
 		
 		// Wait for start of game frame and display frame
 		do
@@ -133,11 +139,13 @@ int main()
 		captureTotalTicks = 0;
 		prevRegValue = regValue;
 		entryPtr = Entries;
+		numEntries = 0;
 		
 		// Append initial value
 		entryPtr->timestamp = captureTotalTicks;
 		entryPtr->value = regValue;
 		entryPtr++;
+		numEntries++;
 		
 		// Capture loop
 		do
@@ -154,6 +162,7 @@ int main()
 				entryPtr->timestamp = captureTotalTicks;
 				entryPtr->value = regValue;
 				entryPtr++;
+				numEntries++;
 				
 				prevRegValue = regValue;
 			}
@@ -165,22 +174,32 @@ int main()
 		
 		// Render
 		{
-			int x, y;
+			int bitIndex;
 			BYTE *mapPtr = BGMap(0);
 
-			// Crap simulation
-			for (y = 0; y < 8; y++)
+			for (bitIndex = 0; bitIndex < 8; bitIndex++)
 			{
 				BYTE *rowPtr = mapPtr;
+				int segmentStart = 0;
+				int i;
 				
-				for (x = 0; x < 48; x++)
+				for (i = 0; i < numEntries; i++)
 				{
-					BYTE char_index = (((gameFrameIndex + x + y) >> 4) & 0x01) + 2;
-
-					*rowPtr = char_index;
-					rowPtr++;
-					*rowPtr = 0x00;
-					rowPtr++;
+					int x;
+					Entry *e = &Entries[i];
+					BYTE char_index = ((e->value >> BIT_INDICES[bitIndex]) & 1) + 2;
+					int entryX = (int)(((float)e->timestamp / (float)captureTotalTicks) * 48.0f);
+					int segmentLength = entryX - segmentStart;
+					if (segmentLength < 1)
+						segmentLength = 1;
+					for (x = 0; x < segmentLength; x++)
+					{
+						*rowPtr = char_index;
+						rowPtr++;
+						*rowPtr = 0x00;
+						rowPtr++;
+					}
+					segmentStart += segmentLength;
 				}
 				
 				mapPtr += 64 * 2;
