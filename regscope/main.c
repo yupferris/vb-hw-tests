@@ -186,10 +186,11 @@ int main()
 				for (i = 0; i < numEntries; i++)
 				{
 					int x;
-					Entry *e = &Entries[i];
-					BYTE char_index = ((e->value >> BIT_INDICES[bitIndex]) & 1) + 2;
-					int entryX = (int)(((float)e->timestamp / (float)captureTotalTicks) * 48.0f);
-					int segmentLength = entryX - segmentStart;
+					BYTE char_index = ((Entries[i].value >> BIT_INDICES[bitIndex]) & 1) + 2;
+					int nextEntryStart = i < numEntries - 1
+						? (int)(((float)Entries[i + 1].timestamp / (float)captureTotalTicks) * 47.0f)
+						: 47;
+					int segmentLength = nextEntryStart - segmentStart;
 					if (segmentLength < 1)
 						segmentLength = 1;
 					for (x = 0; x < segmentLength; x++)
