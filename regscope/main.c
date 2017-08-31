@@ -33,7 +33,7 @@ const BYTE CHAR_DATA[] =
 
 const int BIT_INDICES[] =
 {
-	0, 1, 2, 3, 4, 13, 14, 15
+	15, 14, 13, 4, 3, 2, 1, 0
 };
 
 typedef struct
