@@ -25,8 +25,8 @@ const BYTE CHAR_DATA[] =
 const int BIT_INDICES[] =
 {
 	//15, 14, 13, 4, 3, 2, 1, 0
-	//10, 9, 8, 7, 6, 5, 4, 3, 2, 1
-	15, 12, 11, 10, 9, 8, 4, 3, 2, 1
+	10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+	//15, 12, 11, 10, 9, 8, 4, 3, 2, 1
 };
 
 typedef struct
@@ -121,8 +121,8 @@ int main()
 		// Grab initial reg value
 		regValue =
 			//VIP_REGS[INTPND]
-			//VIP_REGS[DPSTTS]
-			VIP_REGS[XPSTTS] & 0x7fff
+			VIP_REGS[DPSTTS]
+			//VIP_REGS[XPSTTS] & 0x7fff
 			;
 		
 		// Start capture
@@ -143,8 +143,8 @@ int main()
 			// Grab reg value
 			regValue =
 				//VIP_REGS[INTPND]
-				//VIP_REGS[DPSTTS]
-				VIP_REGS[XPSTTS] & 0x7fff
+				VIP_REGS[DPSTTS]
+				//VIP_REGS[XPSTTS] & 0x7fff
 				;
 
 			// Reset bits
