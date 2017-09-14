@@ -1,6 +1,8 @@
 #include <functions.h>
 #include <components.h>
 
+#define sizeof_array(array) ((int)(sizeof(array) / sizeof(array[0])))
+
 const BYTE CHAR_DATA[] =
 {
 	// Char 0 (empty)
@@ -22,9 +24,9 @@ const BYTE CHAR_DATA[] =
 
 const int BIT_INDICES[] =
 {
-	15, 14, 13, 4, 3, 2, 1, 0
+	//15, 14, 13, 4, 3, 2, 1, 0
 	//10, 9, 8, 7, 6, 5, 4, 3, 2, 1
-	//15, 12, 11, 10, 9, 8, 4, 3, 2, 1
+	15, 12, 11, 10, 9, 8, 4, 3, 2, 1
 };
 
 typedef struct
@@ -110,19 +112,17 @@ int main()
 		VIP_REGS[INTCLR] = 0xffff;//VIP_REGS[INTPND];
 
 		// Wait for start of game frame and display frame
-		do
-		{
-			regValue = VIP_REGS[INTPND];
-		} while (!(regValue & (GAMESTART | FRAMESTART)));
+		while ((VIP_REGS[INTPND] & (GAMESTART | FRAMESTART)) != (GAMESTART | FRAMESTART))
+			;
 		
 		// Reset pending interrupts
 		VIP_REGS[INTCLR] = 0xffff;//VIP_REGS[INTPND];
 
 		// Grab initial reg value
 		regValue =
-			VIP_REGS[INTPND]
+			//VIP_REGS[INTPND]
 			//VIP_REGS[DPSTTS]
-			//VIP_REGS[XPSTTS] & 0x7fff
+			VIP_REGS[XPSTTS] & 0x7fff
 			;
 		
 		// Start capture
@@ -142,13 +142,13 @@ int main()
 		{
 			// Grab reg value
 			regValue =
-				VIP_REGS[INTPND]
+				//VIP_REGS[INTPND]
 				//VIP_REGS[DPSTTS]
-				//VIP_REGS[XPSTTS] & 0x7fff
+				VIP_REGS[XPSTTS] & 0x7fff
 				;
 
 			// Reset bits
-			VIP_REGS[INTCLR] = regValue;
+			//VIP_REGS[INTCLR] = regValue;
 			
 			// Check for diff and append to list
 			if (regValue != prevRegValue)
@@ -170,14 +170,14 @@ int main()
 			captureTotalTicks++;
 
 			// Capture until start of next frame
-		} while (!(regValue & FRAMESTART));
+		} while (!(VIP_REGS[INTPND] & FRAMESTART));
 		
 		// Render
 		{
 			int bitIndex;
 			BYTE *rowPtr = BGMap(0);
 
-			for (bitIndex = 0; bitIndex < 8/*10*//*10*/; bitIndex++)
+			for (bitIndex = 0; bitIndex < sizeof_array(BIT_INDICES); bitIndex++)
 			{
 				BYTE *charPtr = rowPtr;
 				int segmentStart = 0;
