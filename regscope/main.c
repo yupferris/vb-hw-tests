@@ -1,17 +1,6 @@
 #include <functions.h>
 #include <components.h>
 
-/*void vipInterruptHandler()
-{
-	VIP_REGS[XPCTRL] = VIP_REGS[XPSTTS] | XPEN;
-	// Comment this out; breaks in rustual boy
-	//  BUT WORKS IN REALITY BOY I JUST FOUND OUT AFTER THE STREAM!!!
-	VIP_REGS[DPCTRL] = VIP_REGS[DPSTTS] | (SYNCE | RE | DISP);
-	VIP_REGS[BKCOL] = 0x03;
-
-	vpu_vector = 0;
-}*/
-
 const BYTE CHAR_DATA[] =
 {
 	// Char 0 (empty)
@@ -27,13 +16,15 @@ const BYTE CHAR_DATA[] =
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
 	
 	// Char 3 (top line)
-	0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
 const int BIT_INDICES[] =
 {
 	15, 14, 13, 4, 3, 2, 1, 0
+	//10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+	//15, 12, 11, 10, 9, 8, 4, 3, 2, 1
 };
 
 typedef struct
@@ -42,14 +33,12 @@ typedef struct
 	HWORD value;
 } Entry;
 
-#define MAX_ENTRIES 1000
+#define MAX_ENTRIES 800
 
 static Entry Entries[MAX_ENTRIES];
 
 int main()
 {
-	int gameFrameIndex = 0;
-	
 	//column table setup
 	vbSetColTable();
 
@@ -109,15 +98,6 @@ int main()
 	// Set up drawing
 	VIP_REGS[XPCTRL] = VIP_REGS[XPSTTS] | XPEN;
 	
-	// Set VIP interrupt
-	//vpu_vector = (u32)(vipInterruptHandler);
-	//VIP_REGS[INTENB] |= FRAMESTART;
-	
-	//set_intlevel(0);
-	
-	// Reset pending interrupts
-	VIP_REGS[INTCLR] = 0xff;
-	
 	// Main loop
 	while (1)
 	{
@@ -125,7 +105,10 @@ int main()
 		HWORD regValue, prevRegValue;
 		Entry *entryPtr;
 		int numEntries;
-		
+
+		// Reset pending interrupts
+		VIP_REGS[INTCLR] = 0xffff;//VIP_REGS[INTPND];
+
 		// Wait for start of game frame and display frame
 		do
 		{
@@ -133,7 +116,14 @@ int main()
 		} while (!(regValue & (GAMESTART | FRAMESTART)));
 		
 		// Reset pending interrupts
-		VIP_REGS[INTCLR] = 0xff;
+		VIP_REGS[INTCLR] = 0xffff;//VIP_REGS[INTPND];
+
+		// Grab initial reg value
+		regValue =
+			VIP_REGS[INTPND]
+			//VIP_REGS[DPSTTS]
+			//VIP_REGS[XPSTTS] & 0x7fff
+			;
 		
 		// Start capture
 		captureTotalTicks = 0;
@@ -151,14 +141,24 @@ int main()
 		do
 		{
 			// Grab reg value
-			regValue = VIP_REGS[INTPND];
-			
-			// Clear new bits from pending reg
+			regValue =
+				VIP_REGS[INTPND]
+				//VIP_REGS[DPSTTS]
+				//VIP_REGS[XPSTTS] & 0x7fff
+				;
+
+			// Reset bits
 			VIP_REGS[INTCLR] = regValue;
 			
 			// Check for diff and append to list
 			if (regValue != prevRegValue)
 			{
+				if (numEntries > MAX_ENTRIES)
+				{
+					VIP_REGS[BKCOL] = 3;
+					break;
+				}
+
 				entryPtr->timestamp = captureTotalTicks;
 				entryPtr->value = regValue;
 				entryPtr++;
@@ -175,11 +175,11 @@ int main()
 		// Render
 		{
 			int bitIndex;
-			BYTE *mapPtr = BGMap(0);
+			BYTE *rowPtr = BGMap(0);
 
-			for (bitIndex = 0; bitIndex < 8; bitIndex++)
+			for (bitIndex = 0; bitIndex < 8/*10*//*10*/; bitIndex++)
 			{
-				BYTE *rowPtr = mapPtr;
+				BYTE *charPtr = rowPtr;
 				int segmentStart = 0;
 				int i;
 				
@@ -195,19 +195,17 @@ int main()
 						segmentLength = 1;
 					for (x = 0; x < segmentLength; x++)
 					{
-						*rowPtr = char_index;
-						rowPtr++;
-						*rowPtr = 0x00;
-						rowPtr++;
+						*charPtr = char_index;
+						charPtr++;
+						*charPtr = 0x00;
+						charPtr++;
 					}
 					segmentStart += segmentLength;
 				}
 				
-				mapPtr += 64 * 2;
+				rowPtr += 64 * 2;
 			}
 		}
-		
-		gameFrameIndex++;
 	}
 
     return 0;
